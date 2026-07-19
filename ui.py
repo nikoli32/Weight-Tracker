@@ -83,43 +83,4 @@ def create_app():
     
     submit_button = tk.Button(app, text="Submit Data", command=on_submit)
     submit_button.pack(pady=10)
-    
-    # Graph selection and display
-    graph_label = tk.Label(app, text="Graph Type:")
-    graph_label.pack(pady=5)
-    
-    graphs = ["Line Plot", "Bar Chart"]
-    graph_var = tk.StringVar(app)
-    graph_var.set(graphs[0])
-    graph_menu = ttk.Combobox(app, textvariable=graph_var, values=graphs)
-    graph_menu.pack(pady=5)
-    
-    def on_graph_select(event):
-        display_graph(graph_var.get())
-    
-    graph_menu.bind("<<ComboboxSelected>>", on_graph_select)
-    
-    canvas = tk.Canvas(app, width=800, height=400)
-    canvas.pack(pady=10)
-    
-    def display_graph(graph_type):
-        df = data_handler.load_data('progress.xlsx')
-        
-        # Clear the previous graph
-        for widget in canvas.winfo_children():
-            widget.destroy()
-        
-        if graph_type == "Line Plot":
-            plt.figure(figsize=(10, 5))
-            sns.lineplot(data=df, x='Date', y='Weight Lifted (kg)', hue='Workout')
-            plt.title("Weight Lifted Over Time")
-        elif graph_type == "Bar Chart":
-            plt.figure(figsize=(10, 5))
-            sns.barplot(data=df, x='Date', y='Weight Lifted (kg)')
-            plt.title("Average Weight Lifted by Date")
-        
-        fig = plt.gcf()
-        canvas.figure = fig
-        FigureCanvasTkAgg(fig, master=canvas).get_tk_widget().pack(side="top", fill="both", expand=1)
-    
     return app
