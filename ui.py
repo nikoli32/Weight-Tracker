@@ -18,9 +18,7 @@ class GymTrackerUI:
         self.root.title("Gym Progress Tracker")
         self.root.geometry("1000x700")
 
-        # ----------------------------
-        # Variables
-        # ----------------------------
+
 
         self.workouts = [
             "Arnold Press",
@@ -70,9 +68,7 @@ class GymTrackerUI:
         self.workout_var = tk.StringVar()
         self.unit_var = tk.StringVar(value="kg")
 
-        # ----------------------------
-        # Build UI
-        # ----------------------------
+
 
         self.create_entry_section()
         self.create_statistics_section()
@@ -82,14 +78,9 @@ class GymTrackerUI:
         # Load data into interface
         self.refresh_ui()
 
-    #################################################
-    # UI Creation
-    #################################################
+
 
     def create_entry_section(self):
-        """
-        Creates the workout entry form.
-        """
 
         entry_frame = ttk.LabelFrame(self.root, text="Add Workout")
         entry_frame.pack(fill="x", padx=10, pady=10)
@@ -106,13 +97,11 @@ class GymTrackerUI:
         self.workout_combo.current(0)
         self.workout_combo.grid(row=0, column=1, padx=5, pady=5)
 
-        # Weight
         ttk.Label(entry_frame, text="Weight:").grid(row=1, column=0, padx=5, pady=5, sticky="w")
 
         self.weight_entry = ttk.Entry(entry_frame)
         self.weight_entry.grid(row=1, column=1, padx=5, pady=5)
 
-        # Unit
         self.unit_combo = ttk.Combobox(
             entry_frame,
             textvariable=self.unit_var,
@@ -122,19 +111,16 @@ class GymTrackerUI:
         )
         self.unit_combo.grid(row=1, column=2, padx=5)
 
-        # Reps
         ttk.Label(entry_frame, text="Reps:").grid(row=2, column=0, padx=5, pady=5, sticky="w")
 
         self.reps_entry = ttk.Entry(entry_frame)
         self.reps_entry.grid(row=2, column=1, padx=5, pady=5)
 
-        # Date
         ttk.Label(entry_frame, text="Date (YYYY-MM-DD):").grid(row=3, column=0, padx=5, pady=5, sticky="w")
 
         self.date_entry = ttk.Entry(entry_frame)
         self.date_entry.grid(row=3, column=1, padx=5, pady=5)
 
-        # Submit button
         ttk.Button(
             entry_frame,
             text="Submit Workout",
@@ -143,9 +129,6 @@ class GymTrackerUI:
 
 
     def create_statistics_section(self):
-        """
-        Displays overall workout statistics.
-        """
 
         stats_frame = ttk.LabelFrame(self.root, text="Statistics")
         stats_frame.pack(fill="x", padx=10, pady=10)
@@ -170,14 +153,10 @@ class GymTrackerUI:
 
 
     def create_exercise_section(self):
-        """
-        Displays exercise-specific information.
-        """
 
         exercise_frame = ttk.LabelFrame(self.root, text="Exercise Details")
         exercise_frame.pack(fill="both", expand=True, padx=10, pady=10)
 
-        # Exercise selector
         ttk.Label(exercise_frame, text="Exercise:").grid(
             row=0,
             column=0,
@@ -195,28 +174,24 @@ class GymTrackerUI:
         self.exercise_combo.current(0)
         self.exercise_combo.grid(row=0, column=1, padx=5, pady=5)
 
-        # Personal Record
         self.pr_label = ttk.Label(
             exercise_frame,
             text="Personal Record: N/A"
         )
         self.pr_label.grid(row=1, column=0, columnspan=2, sticky="w", padx=5)
 
-        # Latest Workout
         self.latest_workout_label = ttk.Label(
             exercise_frame,
             text="Latest Workout: N/A"
         )
         self.latest_workout_label.grid(row=2, column=0, columnspan=2, sticky="w", padx=5)
 
-        # Graph button
         ttk.Button(
             exercise_frame,
             text="Show Progress Graph",
             command=self.show_progress_graph
         ).grid(row=3, column=0, pady=10)
 
-        # Graph area (placeholder)
         self.graph_frame = ttk.Frame(exercise_frame)
         self.graph_frame.grid(
             row=4,
@@ -234,9 +209,6 @@ class GymTrackerUI:
 
 
     def create_history_section(self):
-        """
-        Displays workout history in a Treeview.
-        """
 
         history_frame = ttk.LabelFrame(self.root, text="Workout History")
         history_frame.pack(fill="both", expand=True, padx=10, pady=10)
@@ -255,12 +227,10 @@ class GymTrackerUI:
             height=12
         )
 
-        # Column headings
         for column in columns:
             self.history_tree.heading(column, text=column)
             self.history_tree.column(column, anchor="center")
 
-        # Scrollbar
         scrollbar = ttk.Scrollbar(
             history_frame,
             orient="vertical",
@@ -282,7 +252,6 @@ class GymTrackerUI:
             fill="y"
         )
 
-        # Delete button
         ttk.Button(
             history_frame,
             text="Delete Selected Workout",
@@ -297,14 +266,6 @@ class GymTrackerUI:
         self.refresh_exercise_info()
         self.refresh_history()
 
-
-
-
-    def refresh_statistics(self):
-        """
-        Updates statistics labels.
-        """
-        pass
 
     def refresh_statistics(self):
         stats = data_handler.get_statistics(FILE_PATH)
@@ -347,7 +308,6 @@ class GymTrackerUI:
                 )
                 return
 
-            # Filter selected exercise
             exercise_data = df[df["Workout"] == exercise]
 
             if exercise_data.empty:
@@ -360,14 +320,12 @@ class GymTrackerUI:
                 )
                 return
 
-            # Personal record
             max_weight = exercise_data["Weight Lifted (kg)"].max()
 
             self.pr_label.config(
                 text=f"Personal Record: {max_weight}"
             )
 
-            # Latest workout
             latest = exercise_data.sort_values(
                 by="Date",
                 ascending=False
@@ -387,7 +345,6 @@ class GymTrackerUI:
 
 
     def refresh_history(self):
-        # Clear existing rows
         for row in self.history_tree.get_children():
             self.history_tree.delete(row)
 
@@ -397,7 +354,6 @@ class GymTrackerUI:
             if df.empty:
                 return
 
-            # Sort newest first
             df = df.sort_values(
                 by="Date",
                 ascending=False
@@ -419,10 +375,6 @@ class GymTrackerUI:
         except Exception as e:
             print(f"Error refreshing history: {e}")
 
-    #################################################
-    # Workout Actions
-    #################################################
-
     def submit_workout(self):
         workout = self.workout_var.get()
         weight = self.weight_entry.get()
@@ -430,7 +382,6 @@ class GymTrackerUI:
         date = self.date_entry.get()
         unit = self.unit_var.get()
 
-        # Validation
         if not weight or not reps or not date:
             messagebox.showerror(
                 "Missing Information",
@@ -450,7 +401,6 @@ class GymTrackerUI:
             return
 
 
-        # Save workout
         data_handler.save_data(
             {
                 "Workout": workout,
@@ -507,9 +457,6 @@ class GymTrackerUI:
 
 
     def show_progress_graph(self):
-        """
-        Draws progress graph for selected exercise.
-        """
 
         exercise = self.exercise_combo.get()
 
@@ -537,7 +484,6 @@ class GymTrackerUI:
             )
 
 
-            # Remove old graph
             for widget in self.graph_frame.winfo_children():
                 widget.destroy()
 
@@ -592,9 +538,6 @@ class GymTrackerUI:
 
 
     def clear_inputs(self):
-        """
-        Clears input fields after submission.
-        """
 
         self.weight_entry.delete(
             0,
