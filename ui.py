@@ -123,9 +123,21 @@ class GymTrackerUI:
 
         ttk.Button(
             entry_frame,
+            text="Set Current Date",
+            command=self.set_current_date
+        ).grid(row=3, column=2, padx=5, pady=5)
+
+        ttk.Button(
+            entry_frame,
             text="Submit Workout",
             command=self.submit_workout
         ).grid(row=4, column=0, columnspan=3, pady=10)
+
+    def set_current_date(self):
+        from datetime import date
+        today = date.today()
+        self.date_entry.delete(0, tk.END)
+        self.date_entry.insert(0, today.strftime("%Y-%m-%d"))
 
 
     def create_statistics_section(self):
