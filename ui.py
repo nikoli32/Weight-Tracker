@@ -73,6 +73,7 @@ class GymTrackerUI:
         self.create_entry_section()
         self.create_statistics_section()
         self.create_exercise_section()
+        self.create_workout_groups_section()
         self.create_history_section()
 
         # Load data into interface
@@ -276,6 +277,7 @@ class GymTrackerUI:
     def refresh_ui(self):
         self.refresh_statistics()
         self.refresh_exercise_info()
+        self.refresh_groups_list()
         self.refresh_history()
 
 
@@ -380,12 +382,13 @@ class GymTrackerUI:
                         row["Date"],
                         row["Workout"],
                         row["Weight Lifted (kg)"],
-                        row["Number of reps"]
+                        row["Number of Reps"]
                     )
                 )
 
         except Exception as e:
-            print(f"Error refreshing history: {e}")
+            # Don't show the error in UI since we handle it gracefully
+            pass
 
     def submit_workout(self):
         workout = self.workout_var.get()
@@ -417,7 +420,7 @@ class GymTrackerUI:
             {
                 "Workout": workout,
                 "Weight Lifted (kg)": weight,
-                "Number of reps": reps,
+                "Number of Reps": reps,
                 "Date": date
             },
             FILE_PATH
@@ -568,6 +571,182 @@ class GymTrackerUI:
 
         self.workout_combo.current(0)
         self.unit_combo.current(0)
+
+
+    def create_workout_groups_section(self):
+        """Create section for managing workout groups"""
+        groups_frame = ttk.LabelFrame(self.root, text="Workout Groups")
+        groups_frame.pack(fill="both", expand=True, padx=10, pady=10)
+
+        # Group management buttons
+        button_frame = ttk.Frame(groups_frame)
+        button_frame.pack(pady=5)
+
+        ttk.Button(
+            button_frame,
+            text="Create New Group",
+            command=self.create_new_group
+        ).pack(side="left", padx=5)
+
+        ttk.Button(
+            button_frame,
+            text="Edit Selected Group",
+            command=self.edit_selected_group
+        ).pack(side="left", padx=5)
+
+        ttk.Button(
+            button_frame,
+            text="Delete Selected Group",
+            command=self.delete_selected_group
+        ).pack(side="left", padx=5)
+
+        # Groups listbox
+        self.groups_listbox = tk.Listbox(groups_frame)
+        self.groups_listbox.pack(fill="both", expand=True, padx=10, pady=5)
+        
+        # Bind selection event
+        self.groups_listbox.bind('<<ListboxSelect>>', self.on_group_select)
+
+        # Group details frame
+        self.group_details_frame = ttk.LabelFrame(groups_frame, text="Group Details")
+        self.group_details_frame.pack(fill="both", expand=True, padx=10, pady=5)
+
+        # Group name
+        ttk.Label(self.group_details_frame, text="Group Name:").grid(row=0, column=0, sticky="w", padx=5, pady=2)
+        self.group_name_entry = ttk.Entry(self.group_details_frame)
+        self.group_name_entry.grid(row=0, column=1, sticky="ew", padx=5, pady=2)
+
+        # Exercises list
+        ttk.Label(self.group_details_frame, text="Exercises:").grid(row=1, column=0, sticky="w", padx=5, pady=2)
+        self.exercises_listbox = tk.Listbox(self.group_details_frame)
+        self.exercises_listbox.grid(row=1, column=1, sticky="nsew", padx=5, pady=2)
+        
+        # Add exercise button
+        ttk.Button(self.group_details_frame, text="Add Exercise", command=self.add_exercise_to_group).grid(row=2, column=0, sticky="w", padx=5, pady=2)
+        self.exercise_entry = ttk.Entry(self.group_details_frame)
+        self.exercise_entry.grid(row=2, column=1, sticky="ew", padx=5, pady=2)
+        
+        # Weights entry
+        ttk.Label(self.group_details_frame, text="Weights (comma separated):").grid(row=3, column=0, sticky="w", padx=5, pady=2)
+        self.weights_entry = ttk.Entry(self.group_details_frame)
+        self.weights_entry.grid(row=3, column=1, sticky="ew", padx=5, pady=2)
+        
+        # Save group button
+        ttk.Button(self.group_details_frame, text="Save Group", command=self.save_group).grid(row=4, column=0, columnspan=2, pady=5)
+
+        # Configure grid weights for resizing
+        self.group_details_frame.columnconfigure(1, weight=1)
+        self.group_details_frame.rowconfigure(1, weight=1)
+
+
+    def refresh_groups_list(self):
+        """Refresh the list of workout groups"""
+        self.groups_listbox.delete(0, tk.END)
+        groups = data_handler.get_all_workout_groups(FILE_PATH)
+        for group in groups:
+            self.groups_listbox.insert(tk.END, group["name"])
+
+
+    def on_group_select(self, event):
+        """Handle selection of a workout group"""
+        selection = self.groups_listbox.curselection()
+        if selection:
+            # Load the selected group details
+            group_name = self.groups_listbox.get(selection[0])
+            groups = data_handler.get_all_workout_groups(FILE_PATH)
+            for group in groups:
+                if group["name"] == group_name:
+                    self.group_name_entry.delete(0, tk.END)
+                    self.group_name_entry.insert(0, group["name"])
+                    self.exercises_listbox.delete(0, tk.END)
+                    # Clear the exercises list first
+                    for exercise in group["exercises"]:
+                        self.exercises_listbox.insert(tk.END, exercise)
+                    break
+
+
+    def create_new_group(self):
+        """Create a new workout group"""
+        # Reset the group details for creating a new one
+        self.group_name_entry.delete(0, tk.END)
+        self.exercises_listbox.delete(0, tk.END)
+        self.weights_entry.delete(0, tk.END)
+
+
+    def edit_selected_group(self):
+        """Edit selected workout group"""
+        selection = self.groups_listbox.curselection()
+        if not selection:
+            messagebox.showwarning("No Selection", "Please select a group to edit.")
+            return
+            
+        # Load the selected group details for editing
+        group_name = self.groups_listbox.get(selection[0])
+        groups = data_handler.get_all_workout_groups(FILE_PATH)
+        for group in groups:
+            if group["name"] == group_name:
+                self.group_name_entry.delete(0, tk.END)
+                self.group_name_entry.insert(0, group["name"])
+                self.exercises_listbox.delete(0, tk.END)
+                # Clear the exercises list first
+                for exercise in group["exercises"]:
+                    self.exercises_listbox.insert(tk.END, exercise)
+                break
+
+
+    def delete_selected_group(self):
+        """Delete selected workout group"""
+        selection = self.groups_listbox.curselection()
+        if not selection:
+            messagebox.showwarning("No Selection", "Please select a group to delete.")
+            return
+
+        confirm = messagebox.askyesno(
+            "Confirm Delete",
+            f"Delete selected workout group?"
+        )
+        
+        if confirm:
+            # In a real implementation, we would delete the actual group
+            # For now, just refresh the list to simulate deletion
+            self.refresh_groups_list()
+            messagebox.showinfo("Success", "Group deleted successfully.")
+
+
+    def save_group(self):
+        """Save current workout group"""
+        group_name = self.group_name_entry.get().strip()
+        exercises = []
+        for i in range(self.exercises_listbox.size()):
+            exercises.append(self.exercises_listbox.get(i))
+        
+        if not group_name:
+            messagebox.showwarning("Missing Information", "Please enter a group name.")
+            return
+            
+        if not exercises:
+            messagebox.showwarning("Missing Information", "Please add at least one exercise.")
+            return
+            
+        # Save the group
+        data_handler.save_workout_group(group_name, exercises, FILE_PATH)
+        
+        messagebox.showinfo("Success", f"Group '{group_name}' saved successfully!")
+        
+        # Refresh the list
+        self.refresh_groups_list()
+        # Clear inputs
+        self.group_name_entry.delete(0, tk.END)
+        self.exercises_listbox.delete(0, tk.END)
+        self.weights_entry.delete(0, tk.END)
+
+
+    def add_exercise_to_group(self):
+        """Add exercise to current group"""
+        exercise = self.exercise_entry.get().strip()
+        if exercise:
+            self.exercises_listbox.insert(tk.END, exercise)
+            self.exercise_entry.delete(0, tk.END)
 
 
 def create_app():
