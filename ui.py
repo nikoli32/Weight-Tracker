@@ -18,67 +18,17 @@ class GymTrackerUI:
         self.root.title("Gym Progress Tracker")
         self.root.geometry("1000x700")
 
-
-
-        self.workouts = [
-            "Arnold Press",
-            "Barbell Bench Press",
-            "Barbell Row",
-            "Barbell Squat",
-            "Barbell Romanian Deadlift",
-            "Bicep Curl Machine",
-            "Cable Chest Fly",
-            "Cable Crossover",
-            "Cable Curl",
-            "Cable Lateral Raise",
-            "Cable Row",
-            "Chest Press Machine",
-            "Deadlift",
-            "Decline Bench Press",
-            "Dumbbell Bench Press",
-            "Dumbbell Row",
-            "Dumbbell Shoulder Press",
-            "Face Pull",
-            "Front Squat",
-            "Hammer Curl",
-            "Hack Squat Machine",
-            "Hamstring Curl Machine",
-            "Incline Bench Press",
-            "Incline Dumbbell Press",
-            "Lat Pulldown",
-            "Leg Extension Machine",
-            "Leg Press Machine",
-            "Leg Curl Machine",
-            "Lying Leg Curl Machine",
-            "Overhead Press",
-            "Overhead Tricep Extension",
-            "Pec Deck Machine",
-            "Preacher Curl Machine",
-            "Rear Delt Fly Machine",
-            "Romanian Deadlift",
-            "Seated Cable Row",
-            "Seated Shoulder Press Machine",
-            "Shrug Machine",
-            "Smith Machine Bench Press",
-            "Smith Machine Squat",
-            "Tricep Pushdown",
-            "Upright Row",
-        ]
-
+        self.workouts = data_handler.get_workouts(FILE_PATH)["Workout"].unique().tolist()  # Load existing workouts
         self.workout_var = tk.StringVar()
-        self.unit_var = tk.StringVar(value="kg")
-
-
+        self.unit_var = tk.StringVar(value="lbs")
 
         self.create_entry_section()
         self.create_statistics_section()
         self.create_exercise_section()
-        self.create_workout_groups_section()
         self.create_history_section()
 
         # Load data into interface
         self.refresh_ui()
-
 
 
     def create_entry_section(self):
@@ -89,15 +39,16 @@ class GymTrackerUI:
         # Workout
         ttk.Label(entry_frame, text="Workout:").grid(row=0, column=0, padx=5, pady=5, sticky="w")
 
+        # Create a combobox with existing workouts for selection, with ability to type new ones
         self.workout_combo = ttk.Combobox(
             entry_frame,
-            textvariable=self.workout_var,
             values=self.workouts,
-            state="readonly"
+            state="normal",  # Allow both selection and typing
+            width=30
         )
-        self.workout_combo.current(0)
-        self.workout_combo.grid(row=0, column=1, padx=5, pady=5)
-
+        self.workout_combo.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
+        
+        # Weight
         ttk.Label(entry_frame, text="Weight:").grid(row=1, column=0, padx=5, pady=5, sticky="w")
 
         self.weight_entry = ttk.Entry(entry_frame)
@@ -112,11 +63,13 @@ class GymTrackerUI:
         )
         self.unit_combo.grid(row=1, column=2, padx=5)
 
+        # Reps
         ttk.Label(entry_frame, text="Reps:").grid(row=2, column=0, padx=5, pady=5, sticky="w")
 
         self.reps_entry = ttk.Entry(entry_frame)
         self.reps_entry.grid(row=2, column=1, padx=5, pady=5)
 
+        # Date
         ttk.Label(entry_frame, text="Date (YYYY-MM-DD):").grid(row=3, column=0, padx=5, pady=5, sticky="w")
 
         self.date_entry = ttk.Entry(entry_frame)
@@ -128,11 +81,19 @@ class GymTrackerUI:
             command=self.set_current_date
         ).grid(row=3, column=2, padx=5, pady=5)
 
+        # To Failure Checkbox
+        self.to_failure_var = tk.BooleanVar()
+        ttk.Checkbutton(
+            entry_frame,
+            text="To Failure",
+            variable=self.to_failure_var
+        ).grid(row=4, column=0, columnspan=3, pady=5, sticky="w")
+
         ttk.Button(
             entry_frame,
             text="Submit Workout",
             command=self.submit_workout
-        ).grid(row=4, column=0, columnspan=3, pady=10)
+        ).grid(row=5, column=0, columnspan=3, pady=10)
 
     def set_current_date(self):
         from datetime import date
@@ -183,8 +144,10 @@ class GymTrackerUI:
             values=self.workouts,
             state="readonly"
         )
-
-        self.exercise_combo.current(0)
+        
+        # Don't set current(0) if the list is empty
+        if self.workouts:
+            self.exercise_combo.current(0)
         self.exercise_combo.grid(row=0, column=1, padx=5, pady=5)
 
         self.pr_label = ttk.Label(
@@ -229,8 +192,8 @@ class GymTrackerUI:
         columns = (
             "Date",
             "Workout",
-            "Weight",
-            "Reps"
+            "Weight Lifted (lbs)",
+            "Number of Reps"
         )
 
         self.history_tree = ttk.Treeview(
@@ -277,7 +240,6 @@ class GymTrackerUI:
     def refresh_ui(self):
         self.refresh_statistics()
         self.refresh_exercise_info()
-        self.refresh_groups_list()
         self.refresh_history()
 
 
@@ -334,7 +296,19 @@ class GymTrackerUI:
                 )
                 return
 
-            max_weight = exercise_data["Weight Lifted (kg)"].max()
+            # Check if the column exists
+            if "Weight Lifted (lbs)" not in df.columns:
+                print("Column 'Weight Lifted (lbs)' not found in DataFrame")
+                self.pr_label.config(
+                    text="Personal Record: N/A"
+                )
+
+                self.latest_workout_label.config(
+                    text="Latest Workout: N/A"
+                )
+                return
+
+            max_weight = exercise_data["Weight Lifted (lbs)"].max()
 
             self.pr_label.config(
                 text=f"Personal Record: {max_weight}"
@@ -345,16 +319,26 @@ class GymTrackerUI:
                 ascending=False
             ).iloc[0]
 
-            self.latest_workout_label.config(
-                text=(
-                    f"Latest Workout: "
-                    f"{latest['Weight']} x {latest['Reps']} "
-                    f"({latest['Date']})"
+            # Ensure all columns exist before accessing them
+            if "Weight Lifted (lbs)" not in latest or "Number of Reps" not in latest or "Date" not in latest:
+                print("Missing expected columns in latest workout data")
+                self.latest_workout_label.config(
+                    text="Latest Workout: N/A"
                 )
-            )
+                return
+
+                self.latest_workout_label.config(
+                    text=(
+                        f"Latest Workout: "
+                        f"{latest['Weight Lifted (lbs)']} x {latest['Number of Reps']} "
+                        f"({latest['Date']})"
+                    )
+                )
 
         except Exception as e:
             print(f"Error refreshing exercise info: {e}")
+            import traceback
+            traceback.print_exc()
 
 
 
@@ -381,7 +365,7 @@ class GymTrackerUI:
                     values=(
                         row["Date"],
                         row["Workout"],
-                        row["Weight Lifted (kg)"],
+                        row["Weight Lifted (lbs)"],
                         row["Number of Reps"]
                     )
                 )
@@ -391,13 +375,13 @@ class GymTrackerUI:
             pass
 
     def submit_workout(self):
-        workout = self.workout_var.get()
+        workout = self.workout_combo.get().strip()
         weight = self.weight_entry.get()
         reps = self.reps_entry.get()
         date = self.date_entry.get()
         unit = self.unit_var.get()
 
-        if not weight or not reps or not date:
+        if not workout or not weight or not reps or not date:
             messagebox.showerror(
                 "Missing Information",
                 "Please fill out all fields."
@@ -419,9 +403,10 @@ class GymTrackerUI:
         data_handler.save_data(
             {
                 "Workout": workout,
-                "Weight Lifted (kg)": weight,
+                "Weight Lifted (lbs)": weight,
                 "Number of Reps": reps,
-                "Date": date
+                "Date": date,
+                "To Failure": self.to_failure_var.get()
             },
             FILE_PATH
         )
@@ -432,6 +417,11 @@ class GymTrackerUI:
             "Workout added!"
         )
 
+        # Update the workouts list with new workout if it's not already there
+        if workout not in self.workouts:
+            self.workouts.append(workout)
+            self.workout_combo['values'] = self.workouts
+            
         self.clear_inputs()
         self.refresh_ui()
 
@@ -445,30 +435,46 @@ class GymTrackerUI:
             )
             return
 
+        # Get the full item data including the index
+        item_data = self.history_tree.item(selected[0])
+        values = item_data["values"]
 
-        values = self.history_tree.item(
-            selected[0],
-            "values"
-        )
-
+        # Verify we have the expected number of values
+        if len(values) < 4:
+            messagebox.showerror(
+                "Data Error",
+                "Unable to delete workout: Invalid data format."
+            )
+            return
 
         confirm = messagebox.askyesno(
             "Confirm Delete",
             f"Delete {values[1]} workout from {values[0]}?"
         )
 
-
         if confirm:
+            try:
+                # Ensure proper data types for deletion
+                date_val = values[0]
+                workout_val = values[1] 
+                weight_val = float(values[2])  # Convert to float for comparison
+                reps_val = int(values[3])      # Convert to int for comparison
+                
+                data_handler.delete_workout(
+                    FILE_PATH,
+                    date_val,
+                    workout_val,
+                    weight_val,
+                    reps_val
+                )
 
-            data_handler.delete_workout(
-                FILE_PATH,
-                values[0],
-                values[1],
-                values[2],
-                values[3]
-            )
-
-            self.refresh_ui()
+                self.refresh_ui()
+            except Exception as e:
+                messagebox.showerror(
+                    "Delete Error",
+                    f"Failed to delete workout: {str(e)}"
+                )
+                print(f"Error deleting workout: {e}")
 
 
     def show_progress_graph(self):
@@ -508,11 +514,16 @@ class GymTrackerUI:
             )
 
 
-            ax.plot(
-                df["Date"],
-                df["Weight Lifted (kg)"],
-                marker="o"
-            )
+            # Plot points with different colors based on "To Failure" status
+            for i, row in df.iterrows():
+                color = 'red' if row['To Failure'] else 'blue'
+                ax.plot(row["Date"], row["Weight Lifted (lbs)"], marker="o", color=color, markersize=8)
+
+            # Add legend for the colors
+            from matplotlib.patches import Patch
+            legend_elements = [Patch(color='blue', label='Normal'),
+                               Patch(color='red', label='To Failure')]
+            ax.legend(handles=legend_elements)
 
 
             ax.set_title(
@@ -524,7 +535,7 @@ class GymTrackerUI:
             )
 
             ax.set_ylabel(
-                "Weight Lifted (kg)"
+                "Weight Lifted (lbs)"
             )
 
 
@@ -554,6 +565,9 @@ class GymTrackerUI:
 
     def clear_inputs(self):
 
+        # Clear the workout combobox (which also clears the entry part)
+        self.workout_combo.set('')
+        
         self.weight_entry.delete(
             0,
             tk.END
@@ -568,9 +582,6 @@ class GymTrackerUI:
             0,
             tk.END
         )
-
-        self.workout_combo.current(0)
-        self.unit_combo.current(0)
 
 
     def create_workout_groups_section(self):
@@ -720,6 +731,16 @@ class GymTrackerUI:
         for i in range(self.exercises_listbox.size()):
             exercises.append(self.exercises_listbox.get(i))
         
+        # Get weights from the entry field
+        weights_str = self.weights_entry.get().strip()
+        weights = []
+        if weights_str:
+            try:
+                weights = [float(w.strip()) for w in weights_str.split(',')]
+            except ValueError:
+                messagebox.showerror("Invalid Input", "Weights must be comma-separated numbers.")
+                return
+        
         if not group_name:
             messagebox.showwarning("Missing Information", "Please enter a group name.")
             return
@@ -728,8 +749,8 @@ class GymTrackerUI:
             messagebox.showwarning("Missing Information", "Please add at least one exercise.")
             return
             
-        # Save the group
-        data_handler.save_workout_group(group_name, exercises, FILE_PATH)
+        # Save the group with weights
+        data_handler.save_workout_group(group_name, exercises, weights, FILE_PATH)
         
         messagebox.showinfo("Success", f"Group '{group_name}' saved successfully!")
         
