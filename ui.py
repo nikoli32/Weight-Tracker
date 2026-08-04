@@ -514,10 +514,21 @@ class GymTrackerUI:
             )
 
 
+
+
             # Plot points with different colors based on "To Failure" status
+            # First, we'll plot the connecting lines between points
+            dates = df["Date"]
+            weights = df["Weight Lifted (lbs)"]
+            
+            # Plot lines connecting all points
+            ax.plot(dates, weights, color='gray', linestyle='-', linewidth=1, alpha=0.7)
+            
+            # Then plot the individual points on top
             for i, row in df.iterrows():
                 color = 'red' if row['To Failure'] else 'blue'
                 ax.plot(row["Date"], row["Weight Lifted (lbs)"], marker="o", color=color, markersize=8)
+
 
             # Add legend for the colors
             from matplotlib.patches import Patch
@@ -534,14 +545,17 @@ class GymTrackerUI:
                 "Date"
             )
 
+
             ax.set_ylabel(
                 "Weight Lifted (lbs)"
             )
 
 
+
             plt.xticks(
                 rotation=45
             )
+
 
             fig.tight_layout()
 
