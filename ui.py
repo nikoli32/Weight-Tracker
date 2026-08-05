@@ -104,6 +104,13 @@ class GymTrackerUI:
             text="Submit Workout",
             command=self.submit_workout
         ).grid(row=7, column=0, columnspan=3, pady=10)
+        
+        # Add View Raw Data button
+        ttk.Button(
+            entry_frame,
+            text="View Raw Data",
+            command=self.view_raw_data
+        ).grid(row=8, column=0, columnspan=3, pady=10)
 
     def set_current_date(self):
         from datetime import date
@@ -587,6 +594,25 @@ class GymTrackerUI:
             0,
             tk.END
         )
+        
+    def view_raw_data(self):
+        """Open the Excel file containing the workout data."""
+        import subprocess
+        import os
+        
+        try:
+            # Try to open the Excel file with the default application
+            if os.name == 'nt':  # Windows
+                os.startfile(FILE_PATH)
+            elif os.name == 'posix':  # macOS or Linux
+                subprocess.run(['open', FILE_PATH])  # macOS
+            else:
+                subprocess.run(['xdg-open', FILE_PATH])  # Linux
+        except Exception as e:
+            messagebox.showerror(
+                "Error",
+                f"Could not open the file: {str(e)}"
+            )
 
 
 def create_app():
