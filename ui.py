@@ -43,6 +43,15 @@ class GymTrackerUI:
         self.create_statistics_section()
         self.create_exercise_section()
         self.create_history_section()
+        
+        # Refresh all sections to display existing data
+        self.refresh_ui()
+        
+        # Initialize exercise section with no selection and refresh if needed
+        self.exercise_combo.set("")  # Ensure it's empty initially
+        
+        # Also update the exercise combo box values to include current workouts
+        self.exercise_combo.configure(values=self.workouts)
 
     def create_entry_section(self):
         entry_frame = ctk.CTkFrame(self.main_frame)
@@ -136,7 +145,7 @@ class GymTrackerUI:
     def update_notes_char_count(self, event=None):
         """Update the character count for the notes field."""
         current_length = len(self.notes_text.get("1.0", "end-1c"))
-        self.notes_char_count.config(text=f"{current_length}/300")
+        self.notes_char_count.configure(text=f"{current_length}/300")
         
         # If we exceed 300 characters, truncate the text
         if current_length > 300:
@@ -187,10 +196,12 @@ class GymTrackerUI:
             state="readonly"
         )
         
-        # Don't set current(0) if the list is empty
-        if self.workouts:
-            self.exercise_combo.set(self.workouts[0])
+        # Set to empty string initially - no selection
+        self.exercise_combo.set("")
         self.exercise_combo.grid(row=0, column=1, padx=5, pady=5)
+        
+        # Bind event to refresh exercise info when selection changes
+        self.exercise_combo.bind('<<ComboboxSelected>>', self.on_exercise_select)
 
         self.pr_label = ctk.CTkLabel(
             exercise_frame,
@@ -274,17 +285,19 @@ class GymTrackerUI:
 
     def refresh_ui(self):
         self.refresh_statistics()
-        self.refresh_exercise_info()
+        # Only refresh exercise info if an exercise is selected
+        if self.exercise_combo.get():
+            self.refresh_exercise_info()
         self.refresh_history()
 
     def refresh_statistics(self):
         stats = data_handler.get_statistics(FILE_PATH)
 
-        self.total_workouts_label.config(
+        self.total_workouts_label.configure(
             text=f"Total Workouts: {stats['total_workouts']}"
         )
 
-        self.exercise_count_label.config(
+        self.exercise_count_label.configure(
             text=f"Exercises Tracked: {stats['exercise_count']}"
         )
 
@@ -295,7 +308,7 @@ class GymTrackerUI:
         else:
             latest_text = latest_date.strftime("%Y-%m-%d")
 
-        self.latest_date_label.config(
+        self.latest_date_label.configure(
             text=f"Latest Workout: {latest_text}"
         )
 
@@ -303,6 +316,13 @@ class GymTrackerUI:
         exercise = self.exercise_combo.get()
 
         if not exercise:
+            # Clear the labels when no exercise is selected
+            self.pr_label.configure(
+                text="Personal Record: N/A"
+            )
+            self.latest_workout_label.configure(
+                text="Latest Workout: N/A"
+            )
             return
 
         try:
@@ -609,6 +629,10 @@ class GymTrackerUI:
             0,
             tk.END
         )
+        
+    def on_exercise_select(self, event):
+        # This method is called when an exercise is selected
+        self.refresh_exercise_info()
         
     def view_raw_data(self):
         """Open the Excel file containing the workout data."""
