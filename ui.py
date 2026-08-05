@@ -8,7 +8,8 @@ import pandas as pd
 
 import data_handler
 
-FILE_PATH = "progress.xlsx"
+# Use dynamic file path to avoid publishing to GitHub
+FILE_PATH = data_handler.get_default_file_path()
 
 
 class GymTrackerUI:
@@ -85,17 +86,44 @@ class GymTrackerUI:
             variable=self.to_failure_var
         ).grid(row=4, column=0, columnspan=3, pady=5, sticky="w")
 
+        # Notes field
+        ttk.Label(entry_frame, text="Notes (max 300 chars):").grid(row=5, column=0, padx=5, pady=5, sticky="w")
+        
+        self.notes_text = tk.Text(entry_frame, height=3, width=40)
+        self.notes_text.grid(row=5, column=1, columnspan=2, padx=5, pady=5, sticky="ew")
+        
+        # Add character counter
+        self.notes_char_count = ttk.Label(entry_frame, text="0/300")
+        self.notes_char_count.grid(row=6, column=1, padx=5, pady=2, sticky="w")
+        
+        # Bind event to update character count
+        self.notes_text.bind('<KeyRelease>', self.update_notes_char_count)
+
         ttk.Button(
             entry_frame,
             text="Submit Workout",
             command=self.submit_workout
-        ).grid(row=5, column=0, columnspan=3, pady=10)
+        ).grid(row=7, column=0, columnspan=3, pady=10)
 
     def set_current_date(self):
         from datetime import date
         today = date.today()
         self.date_entry.delete(0, tk.END)
         self.date_entry.insert(0, today.strftime("%Y-%m-%d"))
+
+    def update_notes_char_count(self, event=None):
+        """Update the character count for the notes field."""
+        current_length = len(self.notes_text.get("1.0", "end-1c"))
+        self.notes_char_count.config(text=f"{current_length}/300")
+        
+        # If we exceed 300 characters, truncate the text
+        if current_length > 300:
+            # Get the text and limit it to 300 characters
+            text = self.notes_text.get("1.0", "end-1c")
+            self.notes_text.delete("1.0", "end")
+            self.notes_text.insert("1.0", text[:300])
+            # Update the character count again after truncation
+            self.notes_char_count.config(text="300/300")
 
     def create_statistics_section(self):
         stats_frame = ttk.LabelFrame(self.root, text="Statistics")
@@ -381,13 +409,17 @@ class GymTrackerUI:
             )
             return
 
+        # Get notes from the text widget
+        notes = self.notes_text.get("1.0", "end-1c")
+        
         data_handler.save_data(
             {
                 "Workout": workout,
                 "Weight Lifted (lbs)": weight,
                 "Number of Reps": reps,
                 "Date": date,
-                "To Failure": self.to_failure_var.get()
+                "To Failure": self.to_failure_var.get(),
+                "Notes": notes
             },
             FILE_PATH
         )
