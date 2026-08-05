@@ -7,6 +7,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import pandas as pd
 
 import data_handler
+import customtkinter as ctk
 
 # Use dynamic file path to avoid publishing to GitHub
 FILE_PATH = data_handler.get_default_file_path()
@@ -14,65 +15,79 @@ FILE_PATH = data_handler.get_default_file_path()
 
 class GymTrackerUI:
     def __init__(self, root):
+        # Set the appearance mode and color theme
+        ctk.set_appearance_mode("dark")  # Modes: "System" (default), "Light", "Dark"
+        ctk.set_default_color_theme("blue")  # Themes: "blue" (default), "green", "dark-blue"
+
         self.root = root
         self.root.title("Gym Progress Tracker")
         self.root.geometry("1000x700")
+        
+        # Fix for DPI scaling issues on some systems
+        try:
+            self.root.wm_attributes("-zoomfactor", 1.0)
+        except:
+            pass  # Ignore if not supported on this system
 
+        # Create a main scrollable frame to contain all content
+        self.main_frame = ctk.CTkScrollableFrame(root, width=1000, height=700)
+        self.main_frame.pack(fill="both", expand=True, padx=5, pady=5)
+        
         # Load existing workouts
         self.workouts = data_handler.get_workouts(FILE_PATH)["Workout"].unique().tolist()
         self.workout_var = tk.StringVar()
         self.unit_var = tk.StringVar(value="lbs")
 
-        # Create all sections
+        # Create all sections inside the scrollable frame
         self.create_entry_section()
         self.create_statistics_section()
         self.create_exercise_section()
         self.create_history_section()
 
     def create_entry_section(self):
-        entry_frame = ttk.LabelFrame(self.root, text="Add Workout")
+        entry_frame = ctk.CTkFrame(self.main_frame)
         entry_frame.pack(fill="x", padx=10, pady=10)
 
         # Workout
-        ttk.Label(entry_frame, text="Workout:").grid(row=0, column=0, padx=5, pady=5, sticky="w")
+        ctk.CTkLabel(entry_frame, text="Workout:").grid(row=0, column=0, padx=5, pady=5, sticky="w")
 
         # Create a combobox with existing workouts for selection, with ability to type new ones
-        self.workout_combo = ttk.Combobox(
+        self.workout_combo = ctk.CTkComboBox(
             entry_frame,
             values=self.workouts,
             state="normal",  # Allow both selection and typing
-            width=30
+            width=300
         )
         self.workout_combo.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
         
         # Weight
-        ttk.Label(entry_frame, text="Weight:").grid(row=1, column=0, padx=5, pady=5, sticky="w")
+        ctk.CTkLabel(entry_frame, text="Weight:").grid(row=1, column=0, padx=5, pady=5, sticky="w")
 
-        self.weight_entry = ttk.Entry(entry_frame)
+        self.weight_entry = ctk.CTkEntry(entry_frame)
         self.weight_entry.grid(row=1, column=1, padx=5, pady=5)
 
-        self.unit_combo = ttk.Combobox(
+        self.unit_combo = ctk.CTkComboBox(
             entry_frame,
-            textvariable=self.unit_var,
             values=["kg", "lbs"],
-            width=6,
+            width=60,
             state="readonly"
         )
+        self.unit_combo.set("lbs")  # Set default value
         self.unit_combo.grid(row=1, column=2, padx=5)
 
         # Reps
-        ttk.Label(entry_frame, text="Reps:").grid(row=2, column=0, padx=5, pady=5, sticky="w")
+        ctk.CTkLabel(entry_frame, text="Reps:").grid(row=2, column=0, padx=5, pady=5, sticky="w")
 
-        self.reps_entry = ttk.Entry(entry_frame)
+        self.reps_entry = ctk.CTkEntry(entry_frame)
         self.reps_entry.grid(row=2, column=1, padx=5, pady=5)
 
         # Date
-        ttk.Label(entry_frame, text="Date (YYYY-MM-DD):").grid(row=3, column=0, padx=5, pady=5, sticky="w")
+        ctk.CTkLabel(entry_frame, text="Date (YYYY-MM-DD):").grid(row=3, column=0, padx=5, pady=5, sticky="w")
 
-        self.date_entry = ttk.Entry(entry_frame)
+        self.date_entry = ctk.CTkEntry(entry_frame)
         self.date_entry.grid(row=3, column=1, padx=5, pady=5)
 
-        ttk.Button(
+        ctk.CTkButton(
             entry_frame,
             text="Set Current Date",
             command=self.set_current_date
@@ -80,33 +95,33 @@ class GymTrackerUI:
 
         # To Failure Checkbox
         self.to_failure_var = tk.BooleanVar()
-        ttk.Checkbutton(
+        ctk.CTkCheckBox(
             entry_frame,
             text="To Failure",
             variable=self.to_failure_var
         ).grid(row=4, column=0, columnspan=3, pady=5, sticky="w")
 
         # Notes field
-        ttk.Label(entry_frame, text="Notes (max 300 chars):").grid(row=5, column=0, padx=5, pady=5, sticky="w")
+        ctk.CTkLabel(entry_frame, text="Notes (max 300 chars):").grid(row=5, column=0, padx=5, pady=5, sticky="w")
         
-        self.notes_text = tk.Text(entry_frame, height=3, width=40)
+        self.notes_text = ctk.CTkTextbox(entry_frame, height=80, width=400)
         self.notes_text.grid(row=5, column=1, columnspan=2, padx=5, pady=5, sticky="ew")
         
         # Add character counter
-        self.notes_char_count = ttk.Label(entry_frame, text="0/300")
+        self.notes_char_count = ctk.CTkLabel(entry_frame, text="0/300")
         self.notes_char_count.grid(row=6, column=1, padx=5, pady=2, sticky="w")
         
         # Bind event to update character count
         self.notes_text.bind('<KeyRelease>', self.update_notes_char_count)
 
-        ttk.Button(
+        ctk.CTkButton(
             entry_frame,
             text="Submit Workout",
             command=self.submit_workout
         ).grid(row=7, column=0, columnspan=3, pady=10)
         
         # Add View Raw Data button
-        ttk.Button(
+        ctk.CTkButton(
             entry_frame,
             text="View Raw Data",
             command=self.view_raw_data
@@ -133,32 +148,32 @@ class GymTrackerUI:
             self.notes_char_count.config(text="300/300")
 
     def create_statistics_section(self):
-        stats_frame = ttk.LabelFrame(self.root, text="Statistics")
+        stats_frame = ctk.CTkFrame(self.main_frame)
         stats_frame.pack(fill="x", padx=10, pady=10)
 
-        self.total_workouts_label = ttk.Label(
+        self.total_workouts_label = ctk.CTkLabel(
             stats_frame,
             text="Total Workouts: 0"
         )
         self.total_workouts_label.grid(row=0, column=0, padx=10, pady=5, sticky="w")
 
-        self.exercise_count_label = ttk.Label(
+        self.exercise_count_label = ctk.CTkLabel(
             stats_frame,
             text="Exercises Tracked: 0"
         )
         self.exercise_count_label.grid(row=0, column=1, padx=10, pady=5, sticky="w")
 
-        self.latest_date_label = ttk.Label(
+        self.latest_date_label = ctk.CTkLabel(
             stats_frame,
             text="Latest Workout: N/A"
         )
         self.latest_date_label.grid(row=0, column=2, padx=10, pady=5, sticky="w")
 
     def create_exercise_section(self):
-        exercise_frame = ttk.LabelFrame(self.root, text="Exercise Details")
+        exercise_frame = ctk.CTkFrame(self.main_frame)
         exercise_frame.pack(fill="both", expand=True, padx=10, pady=10)
 
-        ttk.Label(exercise_frame, text="Exercise:").grid(
+        ctk.CTkLabel(exercise_frame, text="Exercise:").grid(
             row=0,
             column=0,
             padx=5,
@@ -166,7 +181,7 @@ class GymTrackerUI:
             sticky="w"
         )
 
-        self.exercise_combo = ttk.Combobox(
+        self.exercise_combo = ctk.CTkComboBox(
             exercise_frame,
             values=self.workouts,
             state="readonly"
@@ -174,28 +189,28 @@ class GymTrackerUI:
         
         # Don't set current(0) if the list is empty
         if self.workouts:
-            self.exercise_combo.current(0)
+            self.exercise_combo.set(self.workouts[0])
         self.exercise_combo.grid(row=0, column=1, padx=5, pady=5)
 
-        self.pr_label = ttk.Label(
+        self.pr_label = ctk.CTkLabel(
             exercise_frame,
             text="Personal Record: N/A"
         )
         self.pr_label.grid(row=1, column=0, columnspan=2, sticky="w", padx=5)
 
-        self.latest_workout_label = ttk.Label(
+        self.latest_workout_label = ctk.CTkLabel(
             exercise_frame,
             text="Latest Workout: N/A"
         )
         self.latest_workout_label.grid(row=2, column=0, columnspan=2, sticky="w", padx=5)
 
-        ttk.Button(
+        ctk.CTkButton(
             exercise_frame,
             text="Show Progress Graph",
             command=self.show_progress_graph
         ).grid(row=3, column=0, pady=10)
 
-        self.graph_frame = ttk.Frame(exercise_frame)
+        self.graph_frame = ctk.CTkFrame(exercise_frame)
         self.graph_frame.grid(
             row=4,
             column=0,
@@ -209,7 +224,7 @@ class GymTrackerUI:
         exercise_frame.rowconfigure(4, weight=1)
 
     def create_history_section(self):
-        history_frame = ttk.LabelFrame(self.root, text="Workout History")
+        history_frame = ctk.CTkFrame(self.main_frame)
         history_frame.pack(fill="both", expand=True, padx=10, pady=10)
 
         columns = (
@@ -251,7 +266,7 @@ class GymTrackerUI:
             fill="y"
         )
 
-        ttk.Button(
+        ctk.CTkButton(
             history_frame,
             text="Delete Selected Workout",
             command=self.delete_selected_workout
@@ -294,11 +309,11 @@ class GymTrackerUI:
             df = data_handler.load_data(FILE_PATH)
 
             if df.empty:
-                self.pr_label.config(
+                self.pr_label.configure(
                     text="Personal Record: N/A"
                 )
 
-                self.latest_workout_label.config(
+                self.latest_workout_label.configure(
                     text="Latest Workout: N/A"
                 )
                 return
@@ -306,11 +321,11 @@ class GymTrackerUI:
             exercise_data = df[df["Workout"] == exercise]
 
             if exercise_data.empty:
-                self.pr_label.config(
+                self.pr_label.configure(
                     text="Personal Record: N/A"
                 )
 
-                self.latest_workout_label.config(
+                self.latest_workout_label.configure(
                     text="Latest Workout: N/A"
                 )
                 return
@@ -318,18 +333,18 @@ class GymTrackerUI:
             # Check if the column exists
             if "Weight Lifted (lbs)" not in df.columns:
                 print("Column 'Weight Lifted (lbs)' not found in DataFrame")
-                self.pr_label.config(
+                self.pr_label.configure(
                     text="Personal Record: N/A"
                 )
 
-                self.latest_workout_label.config(
+                self.latest_workout_label.configure(
                     text="Latest Workout: N/A"
                 )
                 return
 
             max_weight = exercise_data["Weight Lifted (lbs)"].max()
 
-            self.pr_label.config(
+            self.pr_label.configure(
                 text=f"Personal Record: {max_weight}"
             )
 
@@ -341,18 +356,18 @@ class GymTrackerUI:
             # Ensure all columns exist before accessing them
             if "Weight Lifted (lbs)" not in latest or "Number of Reps" not in latest or "Date" not in latest:
                 print("Missing expected columns in latest workout data")
-                self.latest_workout_label.config(
+                self.latest_workout_label.configure(
                     text="Latest Workout: N/A"
                 )
                 return
 
-                self.latest_workout_label.config(
-                    text=(
-                        f"Latest Workout: "
-                        f"{latest['Weight Lifted (lbs)']} x {latest['Number of Reps']} "
-                        f"({latest['Date']})"
-                    )
+            self.latest_workout_label.configure(
+                text=(
+                    f"Latest Workout: "
+                    f"{latest['Weight Lifted (lbs)']} x {latest['Number of Reps']} "
+                    f"({latest['Date']})"
                 )
+            )
 
         except Exception as e:
             print(f"Error refreshing exercise info: {e}")
@@ -439,7 +454,7 @@ class GymTrackerUI:
         # Update the workouts list with new workout if it's not already there
         if workout not in self.workouts:
             self.workouts.append(workout)
-            self.workout_combo['values'] = self.workouts
+            self.workout_combo.configure(values=self.workouts)
             
         self.clear_inputs()
         self.refresh_ui()
@@ -616,7 +631,7 @@ class GymTrackerUI:
 
 
 def create_app():
-    root = tk.Tk()
+    root = ctk.CTk()
 
     GymTrackerUI(root)
 
