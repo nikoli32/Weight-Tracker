@@ -40,10 +40,10 @@ class GymTrackerUI:
 
         # Create all sections inside the scrollable frame
         self.create_entry_section()
+        self.create_mutli_entry_button()
         self.create_statistics_section()
         self.create_exercise_section()
         self.create_history_section()
-        self.create_mutli_entry_button()
         
         # Refresh all sections to display existing data
         self.refresh_ui()
