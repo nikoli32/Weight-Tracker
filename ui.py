@@ -234,6 +234,17 @@ class GymTrackerUI:
         exercise_frame.columnconfigure(2, weight=1)
         exercise_frame.rowconfigure(4, weight=1)
 
+    def create_mutli_entry_button(self):
+        ctk.CTkButton(
+            self.main_frame,
+            text="Add Multiple Workouts",
+            command=self.open_multi_entry_window
+        ).pack(pady=10)
+
+        
+
+
+
     def create_history_section(self):
         history_frame = ctk.CTkFrame(self.main_frame)
         history_frame.pack(fill="both", expand=True, padx=10, pady=10)
@@ -425,6 +436,8 @@ class GymTrackerUI:
         except Exception as e:
             # Don't show the error in UI since we handle it gracefully
             pass
+
+        
 
     def submit_workout(self):
         workout = self.workout_combo.get().strip()
