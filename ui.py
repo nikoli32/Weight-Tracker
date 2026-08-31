@@ -40,6 +40,7 @@ class GymTrackerUI:
 
         # Create all sections inside the scrollable frame
         self.create_entry_section()
+        self.create_mutli_entry_button()
         self.create_statistics_section()
         self.create_exercise_section()
         self.create_history_section()
@@ -234,6 +235,14 @@ class GymTrackerUI:
         exercise_frame.columnconfigure(2, weight=1)
         exercise_frame.rowconfigure(4, weight=1)
 
+    def create_mutli_entry_button(self):
+        ctk.CTkButton(
+            self.main_frame,
+            text="Add Multiple Workouts",
+            command=self.open_multi_entry_window
+        ).pack(pady=10)
+
+
     def create_history_section(self):
         history_frame = ctk.CTkFrame(self.main_frame)
         history_frame.pack(fill="both", expand=True, padx=10, pady=10)
@@ -425,6 +434,8 @@ class GymTrackerUI:
         except Exception as e:
             # Don't show the error in UI since we handle it gracefully
             pass
+
+        
 
     def submit_workout(self):
         workout = self.workout_combo.get().strip()
@@ -652,6 +663,30 @@ class GymTrackerUI:
                 "Error",
                 f"Could not open the file: {str(e)}"
             )
+
+    def open_multi_entry_window(self):
+        """Open a new window for adding multiple workouts at once."""
+        multi_entry_window = ctk.CTkToplevel(self.root)
+        multi_entry_window.title("Add Multiple Workouts")
+        multi_entry_window.geometry("600x400")
+
+        # Instructions
+        ctk.CTkLabel(
+            multi_entry_window,
+            text="Enter workouts in the following format (one per line):\n"
+                 "Workout, Weight, Reps, Date (YYYY-MM-DD), To Failure (True/False), Notes"
+        ).pack(pady=10)
+
+        # Textbox for multiple entries
+        self.multi_entry_text = ctk.CTkTextbox(multi_entry_window, height=200, width=550)
+        self.multi_entry_text.pack(pady=10)
+
+        # Submit button
+        ctk.CTkButton(
+            multi_entry_window,
+            text="Submit Workouts",
+            command=self.submit_multiple_workouts
+        ).pack(pady=10)
 
 
 def create_app():
